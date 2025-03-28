@@ -3,53 +3,73 @@ import axios from 'axios';
 
 function App() {
   const [url, setUrl] = useState('');
-  const [summary, setSummary] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleCrawl = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!url.trim()) {
+      setError('Please enter a valid URL.');
+      return;
+    }
+    setError('');
     setLoading(true);
-    setError(null);
-    setSummary(null);
+    setData(null);
 
     try {
       const response = await axios.post(`http://localhost:8080/api/crawl?url=${encodeURIComponent(url)}`);
-      setSummary(response.data);
+      setData(response.data);
     } catch (err) {
-      setError('Failed to fetch summary. Please try again.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-
-    
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-      <h1 className="text-3xl font-bold mb-4">WebInsight</h1>
-      <div className="w-full max-w-md">
+      <h1 className="text-2xl font-bold mb-4">Web Crawler</h1>
+      <form onSubmit={handleSubmit} className="w-full max-w-md">
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter website URL"
-          className="w-full p-2 rounded-md bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-blue-500 mb-2"
         />
         <button
-          onClick={handleCrawl}
-          disabled={loading || !url}
-          className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-2 rounded-md transition"
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200"
+          disabled={loading}
         >
-          {loading ? 'Fetching...' : 'Extract & Summarize'}
+          {loading ? 'Crawling...' : 'Submit'}
         </button>
-      </div>
+      </form>
 
       {error && <p className="text-red-500 mt-4">{error}</p>}
 
-      {summary && (
-        <div className="mt-6 bg-gray-800 p-4 rounded-md shadow-md w-full max-w-md">
-          <h2 className="text-xl font-bold mb-2">{summary.title}</h2>
-          <p className="text-gray-300 whitespace-pre-wrap">{summary.contentSummary}</p>
+      {data && (
+        <div className="mt-6 w-full max-w-2xl p-4 bg-gray-800 rounded-lg border border-gray-700">
+          <h2 className="text-xl font-semibold mb-2">{data.title || 'No Title'}</h2>
+          {data.headings && (
+            <div className="mb-2">
+              <strong>Headings:</strong>
+              <ul className="list-disc pl-5">
+                {data.headings.map((heading, index) => (
+                  <li key={index}>{heading}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {data.paragraphs && (
+            <div>
+              <strong>Content:</strong>
+              {data.paragraphs.map((para, index) => (
+                <p key={index} className="mb-2">{para}</p>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
