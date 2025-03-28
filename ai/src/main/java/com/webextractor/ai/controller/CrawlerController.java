@@ -9,6 +9,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/crawl")
+@CrossOrigin(origins = "http://localhost:5173")
 public class CrawlerController {
 
     @Autowired
