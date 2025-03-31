@@ -2,13 +2,15 @@ package com.webextractor.ai.service;
 
 import com.webextractor.ai.client.ScraperClient;
 import com.webextractor.ai.client.GeminiClient;
-import com.webextractor.ai.model.PageSummary;
-import com.webextractor.ai.model.GeminiRequest;
-import com.webextractor.ai.model.GeminiResponse;
+import com.webextractor.ai.model.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class WebCrawlerService {
@@ -24,11 +26,11 @@ public class WebCrawlerService {
         this.geminiClient = geminiClient;
     }
 
-    public String processUrl(String url) {
-        // Step 1: Get scraped content from Python Scraper API
+    public ResponseEntity<FinalResponse> processUrl(String url) {
+        // Step 1: Get scraped content from Python Scraper API (ye another microservice hai)
         PageSummary pageSummary = scraperClient.scrape(url);
 
-        // Step 2: Format content for Gemini
+        // Step 2: Format content for Gemini(sundar bana rahe hai)
         String content = formatContent(pageSummary);
 
         // Step 3: Send content to Gemini
@@ -40,9 +42,17 @@ public class WebCrawlerService {
         request.setContents(List.of(geminiContent));
 
         GeminiResponse response = geminiClient.generateContent(request);
+        String summary = response.getCandidates().get(0).getContent().getParts().get(0).getText();
 
+        // Step 4: JSON response banare hai
+//        Map<String, Object> jsonResponse = new HashMap<>();
+//        jsonResponse.put("title", pageSummary.getTitle());
+//        jsonResponse.put("headings", pageSummary.getHeadings());
+//        jsonResponse.put("paragraphs", pageSummary.getParagraphs());
+//        jsonResponse.put("geminiSummary", summary);
 
-        return response.getCandidates().get(0).getContent().getParts().get(0).getText();
+         ApiResponse apiResponse = new ApiResponse( pageSummary.getTitle(), pageSummary.getHeadings(),pageSummary.getParagraphs(),summary);
+        return ResponseEntity.status(HttpStatus.OK).body( new FinalResponse("succefully returned data","200",true,apiResponse));
     }
 
     private String formatContent(PageSummary pageSummary) {
